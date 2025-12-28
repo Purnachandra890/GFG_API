@@ -2,34 +2,34 @@ import express from "express";
 import axios from "axios";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 const gfgLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 3,
+  windowMs: Number(process.env.RATE_LIMIT_WINDOW) * 60 * 1000,
+  max: Number(process.env.RATE_LIMIT_MAX),
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
     res.status(429).json({
       success: false,
       error: "Too many requests. Please wait before refreshing again.",
-      retryAfterMinutes: 15,
+      retryAfterMinutes: process.env.RATE_LIMIT_WINDOW,
     });
   },
 });
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Test route
 app.get("/", (req, res) => {
   res.send("GFG Backend is running");
 });
 
-// GFG solved problems route
 app.post("/api/gfg/solved", gfgLimiter, async (req, res) => {
   const { handle, year = "", month = "" } = req.body;
 
@@ -39,7 +39,7 @@ app.post("/api/gfg/solved", gfgLimiter, async (req, res) => {
 
   try {
     const gfgRes = await axios.post(
-      "https://practiceapi.geeksforgeeks.org/api/v1/user/problems/submissions/",
+      process.env.GFG_API_URL,
       {
         handle,
         year,
@@ -82,7 +82,6 @@ app.post("/api/gfg/solved", gfgLimiter, async (req, res) => {
   }
 });
 
-// Start server
 app.listen(PORT, () => {
   console.log(`Backend running at http://localhost:${PORT}`);
 });
